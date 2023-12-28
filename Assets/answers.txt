@@ -1,0 +1,15 @@
+﻿What are the five oceans on Earth?,Pacific Ocean,Atlantic Ocean,Indian Ocean,Southern (Antartic) Ocean,Northern (Artic) Ocean
+What are the ingredients of a Bloody Mary?,Tomato juice,Vodka,Tabasco,Worcestershire Sauce,Pepper
+What do you know about One Direction?,Boyband,British,Harry Styles,What Makes You Beautiful,The X-Factor
+What do you know about Lewis Hamilton?,British,Racing,Formula 1,World Champion,Mercedes
+What do you know about David Attenborough?,British,Biologist,Sir,Voice,Nature Documentaries
+What do you know about Snow White?,Fairy Tale,Disneymovie,7 Dwarves,Step-Mom,Mirror mirror
+What do you know about Toy Story?,Animated Movie,Buzz Lightyear,Pixar,Toys,Woody
+What do you know about the KKK?,United States,Racism,Pointy hats,Burning Crosses,Grand Wizard
+What do you know about Ferrari?,Carbrand,Italian,Red,Horse,Formula 1
+What do you know about Leonardo DiCaprio?,American,Actor,Titanic,Oscar,Wolf of wallstreet
+What do you know about Troy?,City,Horse,Myth,War,Odyssey of Homerus
+What are the five biggest worldreligions?,Islam,Christianity,Buddhism,Judaism,Hinduism
+What are the weekdays in French?,Lundi,Mardi,Mercredi,Jeudi,Vendredi
+What do you know about Oktoberfest?,Beer,München,Lederhosen,Dirndl,Biergarten
+What do you know about the Arc de Triomphe?,Paris,Arch,Roundabout,Champs-Élysées,Tour de France
