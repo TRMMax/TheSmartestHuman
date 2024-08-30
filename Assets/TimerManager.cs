@@ -1,69 +1,75 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class TimerManager : MonoBehaviour {
 
-	[SerializeField] private TextAsset answersFile;
-	
-	[SerializeField] private TMP_InputField inputName1;
-	[SerializeField] private TMP_InputField inputName2;
-	[SerializeField] private TMP_InputField inputName3;
-
-	[SerializeField] private TMP_InputField inputTimer1;
-	[SerializeField] private TMP_InputField inputTimer2;
-	[SerializeField] private TMP_InputField inputTimer3;
-
-	[SerializeField] private Button startButton;
+	[SerializeField] private TMP_InputField inputNamePrefab;
+	[SerializeField] private TMP_InputField inputTimerPrefab;
+	[SerializeField] private TMP_Text textTimerPrefab;
+	[SerializeField] private RawImage timerBackgroundPrefab;
+	[SerializeField] private TMP_Text textNamePrefab;
 
 	[SerializeField] private GameObject overlay;
-
-	[SerializeField] private TMP_Text textTimer1;
-	[SerializeField] private TMP_Text textTimer2;
-	[SerializeField] private TMP_Text textTimer3;
+	[SerializeField] private Transform canvasTransform;
 
 	[SerializeField] private List<TMP_Text> textAnswers;
-	
-	[SerializeField] private int correctAnswerTimeLoss = 20;
+
 
 	[SerializeField] private Texture2D inactiveTimer;
 	[SerializeField] private Texture2D activeTimer;
 
-	[SerializeField] private RawImage timerBackground1;
-	[SerializeField] private RawImage timerBackground2;
-	[SerializeField] private RawImage timerBackground3;
-
-	[SerializeField] private TMP_Text textName1;
-	[SerializeField] private TMP_Text textName2;
-	[SerializeField] private TMP_Text textName3;
-
 	[SerializeField] private TMP_Text questionText;
-	
-	private List<AnswerSet> answers;
 
-	private float timer1;
-	private float timer2;
-	private float timer3;
+	private int correctAnswerTimeLoss;
+	private List<AnswerSet> answers;
+	private TeamData[] teams;
 
 	private bool running = false;
 	private bool paused = true;
-	private int turn = 1;
+	private int turn = 0;
 
 	private int question = 0;
 
 	private bool[] showAnswers = new bool[5];
 
 	private void Start() {
-		// Screen.SetResolution(1280, 720, true);
+		Screen.SetResolution(1280, 720, true);
+
+		FileStream configFile = File.OpenRead(Path.Combine(Application.streamingAssetsPath, "config.json"));
+		Config config = JsonUtility.FromJson<Config>(new StreamReader(configFile).ReadToEnd());
+		correctAnswerTimeLoss = config.correctAnswerTimeLoss;
+		configFile.Close();
 		
+		Vector3 center = new Vector3(Screen.width / 2f, Screen.height / 2f, 0);
+
+		teams = new TeamData[config.teams];
+		for (int i = 0; i < config.teams; i++) {
+			teams[i] = new TeamData {
+				inputName = Instantiate(inputNamePrefab, center + new Vector3(200 * i - (config.teams - 1) * 100, 50, 0), Quaternion.identity, overlay.transform),
+				inputTimer = Instantiate(inputTimerPrefab, center + new Vector3(200 * i - (config.teams - 1) * 100, 0, 0), Quaternion.identity, overlay.transform),
+				timerBackground = Instantiate(timerBackgroundPrefab, center + new Vector3(350 * i - (config.teams - 1) * 175, 175, 0), Quaternion.identity, canvasTransform),
+				textTimer = Instantiate(textTimerPrefab, center + new Vector3(350 * i - (config.teams - 1) * 175, 175, 0), Quaternion.identity, canvasTransform),
+				textName = Instantiate(textNamePrefab, center + new Vector3(350 * i - (config.teams - 1) * 175, 275, 0), Quaternion.identity, canvasTransform)
+			};
+		}
+		
+		overlay.transform.SetAsLastSibling();
+
 		answers = new List<AnswerSet>();
-		
-		string[] questions = answersFile.text.Split('\n');
-		foreach (string qText in questions) {
+
+		FileStream answersFile = File.OpenRead(Path.Combine(Application.streamingAssetsPath, "answers.csv"));
+		TextReader answersReader = new StreamReader(answersFile);
+		answersReader.ReadLine();
+
+		string qText = answersReader.ReadLine();
+		while (!string.IsNullOrEmpty(qText)) {
 			string[] q = qText.Split(',');
+			if (q.Length != 6) continue;
 			AnswerSet answerSet = new AnswerSet {
 				question = q[0],
 				answer1 = q[1],
@@ -72,9 +78,12 @@ public class TimerManager : MonoBehaviour {
 				answer4 = q[4],
 				answer5 = q[5]
 			};
-			
+
 			answers.Add(answerSet);
+			qText = answersReader.ReadLine();
 		}
+		
+		answersFile.Close();
 	}
 
 	private void Update() {
@@ -89,93 +98,72 @@ public class TimerManager : MonoBehaviour {
 		if (Input.GetKeyDown(KeyCode.Alpha5)) CorrectAnswer(5);
 
 		if (Input.GetKeyDown(KeyCode.DownArrow)) {
-			if (turn == 1) timer1--;
-			if (turn == 2) timer2--;
-			if (turn == 3) timer3--;
+			teams[turn].seconds--;
 		}
-		
+
 		if (Input.GetKeyDown(KeyCode.UpArrow)) {
-			if (turn == 1) timer1++;
-			if (turn == 2) timer2++;
-			if (turn == 3) timer3++;
+			teams[turn].seconds++;
 		}
 
 		if (running && !paused) {
 			float delta = Time.deltaTime;
 
-			if (turn == 1) timer1 -= delta;
-			if (turn == 2) timer2 -= delta;
-			if (turn == 3) timer3 -= delta;
-			
-			if (timer1 <= 0 || timer2 <= 0 || timer3 <= 0) {
-				if (timer1 <= 0) textTimer1.color = Color.red;
-				if (timer2 <= 0) textTimer2.color = Color.red;
-				if (timer3 <= 0) textTimer3.color = Color.red;
+			teams[turn].seconds -= delta;
+
+			for (int i = 0; i < teams.Length; i++) {
+				if (teams[i].seconds <= 0) teams[i].textTimer.color = Color.red;
 			}
 		}
-		
-		timer1 = Math.Max(timer1, 0);
-		timer2 = Math.Max(timer2, 0);
-		timer3 = Math.Max(timer3, 0);
 
-		textTimer1.text = Math.Ceiling(timer1).ToString(CultureInfo.InvariantCulture);
-		textTimer2.text = Math.Ceiling(timer2).ToString(CultureInfo.InvariantCulture);
-		textTimer3.text = Math.Ceiling(timer3).ToString(CultureInfo.InvariantCulture);
+		for (int i = 0; i < teams.Length; i++) {
+			teams[i].seconds = Math.Max(teams[i].seconds, 0);
+			teams[i].textTimer.text = Math.Ceiling(teams[i].seconds).ToString(CultureInfo.InvariantCulture);
+		}
 	}
 
 	public void StartTimers() {
 		bool parsed = true;
-		parsed &= float.TryParse(inputTimer1.text, out timer1);
-		parsed &= float.TryParse(inputTimer2.text, out timer2);
-		parsed &= float.TryParse(inputTimer3.text, out timer3);
+
+		for (int i = 0; i < teams.Length; i++) {
+			parsed &= float.TryParse(teams[i].inputTimer.text, out teams[i].seconds);
+			teams[i].textName.text = teams[i].inputName.text;
+			teams[i].timerBackground.texture = i == turn ? activeTimer : inactiveTimer;
+		}
 
 		if (!parsed) return;
 
-		textName1.text = inputName1.text;
-		textName2.text = inputName2.text;
-		textName3.text = inputName3.text;
-
-		timerBackground1.texture = activeTimer;
-		timerBackground2.texture = inactiveTimer;
-		timerBackground3.texture = inactiveTimer;
-		
 		question = 0;
 		questionText.text = "";
-		
+
 		for (int i = 0; i < 5; i++) {
 			showAnswers[i] = false;
 			textAnswers[i].gameObject.SetActive(false);
 		}
-		
+
 		overlay.SetActive(false);
-		
+
 		running = true;
 	}
 
 	private void ChangeTurn(int num) {
-		if (num >= 4) num = 1;
-		if (num <= 0) num = 3;
+		if (num >= teams.Length) num = 0;
+		if (num < 0) num = teams.Length - 1;
 
 		turn = num;
-		
-		timerBackground1.texture = inactiveTimer;
-		timerBackground2.texture = inactiveTimer;
-		timerBackground3.texture = inactiveTimer;
 
-
-		if (turn == 1) timerBackground1.texture = activeTimer;
-		if (turn == 2) timerBackground2.texture = activeTimer;
-		if (turn == 3) timerBackground3.texture = activeTimer;
+		for (int i = 0; i < teams.Length; i++) {
+			teams[i].timerBackground.texture = i == turn ? activeTimer : inactiveTimer;
+		}
 	}
 
 	private void NextTurn() {
 		ChangeTurn(turn + 1);
 	}
-	
+
 	private void PreviousTurn() {
 		ChangeTurn(turn - 1);
 	}
-	
+
 	private void NextQuestion() {
 		question++;
 		for (int i = 0; i < 5; i++) {
@@ -194,33 +182,26 @@ public class TimerManager : MonoBehaviour {
 			questionText.text = "";
 		}
 
-		if ((timer1 < timer2 || timer2 <= 0) && (timer1 < timer3 || timer3 <= 0) && timer1 > 0) {
-			ChangeTurn(1);
-		} else if ((timer2 < timer3 || timer3 <= 0) && timer2 > 0) {
-			ChangeTurn(2);
-		} else {
-			ChangeTurn(3);
+		float lowestSeconds = float.PositiveInfinity;
+		int nextTurn = 0;
+		for (int i = 0; i < teams.Length; i++) {
+			if (teams[i].seconds > 0 && teams[i].seconds < lowestSeconds) {
+				lowestSeconds = teams[i].seconds;
+				nextTurn = i;
+			}
 		}
+
+		ChangeTurn(nextTurn);
 	}
 
 	private void CorrectAnswer(int num) {
 		if (showAnswers[num - 1]) return;
 		showAnswers[num - 1] = true;
 		textAnswers[num - 1].gameObject.SetActive(true);
-		
-		switch (turn) {
-			case 1:
-				timer2 -= correctAnswerTimeLoss;
-				timer3 -= correctAnswerTimeLoss;
-				break;
-			case 2:
-				timer1 -= correctAnswerTimeLoss;
-				timer3 -= correctAnswerTimeLoss;
-				break;
-			case 3:
-				timer1 -= correctAnswerTimeLoss;
-				timer2 -= correctAnswerTimeLoss;
-				break;
+
+		for (int i = 0; i < teams.Length; i++) {
+			if (i == turn) continue;
+			teams[i].seconds -= correctAnswerTimeLoss;
 		}
 	}
 
@@ -244,5 +225,21 @@ public class TimerManager : MonoBehaviour {
 			};
 
 		}
+	}
+
+	private class TeamData {
+		public string name;
+		public float seconds;
+		public TMP_InputField inputName;
+		public TMP_InputField inputTimer;
+		public TMP_Text textTimer;
+		public RawImage timerBackground;
+		public TMP_Text textName;
+	}
+
+	[Serializable]
+	private struct Config {
+		public int correctAnswerTimeLoss;
+		public int teams;
 	}
 }
