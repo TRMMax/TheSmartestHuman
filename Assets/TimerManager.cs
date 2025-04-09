@@ -44,7 +44,7 @@ public class TimerManager : MonoBehaviour {
 		Config config = JsonUtility.FromJson<Config>(new StreamReader(configFile).ReadToEnd());
 		correctAnswerTimeLoss = config.correctAnswerTimeLoss;
 		configFile.Close();
-		
+
 		Vector3 center = new Vector3(Screen.width / 2f, Screen.height / 2f, 0);
 
 		teams = new TeamData[config.teams];
@@ -57,7 +57,7 @@ public class TimerManager : MonoBehaviour {
 				textName = Instantiate(textNamePrefab, center + new Vector3(350 * i - (config.teams - 1) * 175, 275, 0), Quaternion.identity, canvasTransform)
 			};
 		}
-		
+
 		overlay.transform.SetAsLastSibling();
 
 		answers = new List<AnswerSet>();
@@ -82,7 +82,7 @@ public class TimerManager : MonoBehaviour {
 			answers.Add(answerSet);
 			qText = answersReader.ReadLine();
 		}
-		
+
 		answersFile.Close();
 	}
 
@@ -96,6 +96,7 @@ public class TimerManager : MonoBehaviour {
 		if (Input.GetKeyDown(KeyCode.Alpha3)) CorrectAnswer(3);
 		if (Input.GetKeyDown(KeyCode.Alpha4)) CorrectAnswer(4);
 		if (Input.GetKeyDown(KeyCode.Alpha5)) CorrectAnswer(5);
+		if (Input.GetKeyDown(KeyCode.X)) RevealAllAnswers();
 
 		if (Input.GetKeyDown(KeyCode.DownArrow)) {
 			teams[turn].seconds--;
@@ -196,13 +197,23 @@ public class TimerManager : MonoBehaviour {
 
 	private void CorrectAnswer(int num) {
 		if (showAnswers[num - 1]) return;
-		showAnswers[num - 1] = true;
-		textAnswers[num - 1].gameObject.SetActive(true);
+		RevealAnswer(num);
 
 		for (int i = 0; i < teams.Length; i++) {
 			if (i == turn) continue;
 			teams[i].seconds -= correctAnswerTimeLoss;
 		}
+	}
+
+	private void RevealAllAnswers() {
+		for (int i = 1; i <= 5; i++) {
+			RevealAnswer(i);
+		}
+	}
+
+	private void RevealAnswer(int num) {
+		showAnswers[num - 1] = true;
+		textAnswers[num - 1].gameObject.SetActive(true);
 	}
 
 	[Serializable]
