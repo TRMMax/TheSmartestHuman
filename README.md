@@ -26,3 +26,4 @@ The program will automatically count down and keep track of the rewards for corr
 - Up/Down Arrow - increase/decrease active teams seconds by 1.
 - Enter (return) - Go to the next question and hide all answers.
 - 1-5 Keys - Mark given question as correct, show the answer and apply penalty to inactive teams.
+- X - Reveal all answers for the current question without applying a penalty to any team.
