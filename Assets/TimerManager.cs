@@ -8,6 +8,8 @@ using UnityEngine.UI;
 
 public class TimerManager : MonoBehaviour {
 
+	[SerializeField] private TMP_Text csvErrorMessage;
+
 	[SerializeField] private TMP_InputField inputNamePrefab;
 	[SerializeField] private TMP_InputField inputTimerPrefab;
 	[SerializeField] private TMP_Text textTimerPrefab;
@@ -39,6 +41,7 @@ public class TimerManager : MonoBehaviour {
 
 	private void Start() {
 		Screen.SetResolution(1280, 720, true);
+		csvErrorMessage.gameObject.SetActive(false);
 
 		FileStream configFile = File.OpenRead(Path.Combine(Application.streamingAssetsPath, "config.json"));
 		Config config = JsonUtility.FromJson<Config>(new StreamReader(configFile).ReadToEnd());
@@ -69,7 +72,16 @@ public class TimerManager : MonoBehaviour {
 		string qText = answersReader.ReadLine();
 		while (!string.IsNullOrEmpty(qText)) {
 			string[] q = qText.Split(',');
-			if (q.Length != 6) continue;
+			if (q.Length != 6) {
+				string err = $"The line '{qText}' has an invalid amount of values, expected 6, got {q.Length}.";
+				Debug.LogError(err);
+				csvErrorMessage.text += "\n" + err;
+				csvErrorMessage.gameObject.SetActive(true);
+				csvErrorMessage.gameObject.transform.SetAsLastSibling();
+				qText = answersReader.ReadLine();
+				continue;
+			}
+
 			AnswerSet answerSet = new AnswerSet {
 				question = q[0],
 				answer1 = q[1],
